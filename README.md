@@ -35,7 +35,7 @@ pip install -r requirements.txt
 ```
 ## Data
 
-Datasets are available at [https://ibm.box.com/v/MoLFormer-data](https://ibm.box.com/v/MoLFormer-data)
+Training datasets are available at [https://drive.google.com/drive/folders/1LuE_HMlJGeZ_iseVCi9y0pa_4la0OKW7?usp=drive_link](https://drive.google.com/drive/folders/1LuE_HMlJGeZ_iseVCi9y0pa_4la0OKW7?usp=drive_link)
 
 ### Training Datasets
 The training set consists of multi-photon brain microvascular images captured by the AIE-gen probe. These images are stored as a tif format file containing 337 pictures. They have been converted into 337 png format images, and data augmentation such as rotation and inversion has been applied. In total, there are 1348 images used for training.
