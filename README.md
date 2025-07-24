@@ -22,14 +22,17 @@ An overview of the MFVISM pipeline is seen in the image above. Overall Structure
 
 #### Creating Conda Environment
 
-> conda create --name env python=3.11
-
-> conda activate env
+```
+conda create --name env python=3.11
+```
+```
+conda activate env
+```
 
 #### Install requirements
-
-> pip install -r requirements.txt
-
+```
+pip install -r requirements.txt
+```
 ## Data
 
 Datasets are available at [https://ibm.box.com/v/MoLFormer-data](https://ibm.box.com/v/MoLFormer-data)
@@ -65,18 +68,22 @@ Other-MPFI-Datasets/
 To train a model run:
 
 Basic training
-> python train.py --ResU_net_Transformer --Dice_Loss
+```
+python train.py --ResU_net_Transformer --Dice_Loss
+```
+
 
 Enhanced training
-> python train.py --ResU_net_Transformer --cal_metrics --Focal_Loss
-
+```
+python train.py --ResU_net_Transformer --cal_metrics --Focal_Loss
+```
 The path to the training checkpointing resources will be in form of ```model_metrics/net_segmentation.pth```.
 ## Testing
 
 To test a model run:
-
-> python test.py --ResU_net_Transformer
-
+```
+python test.py --ResU_net_Transformer
+```
 ## Front page
 ![Front-page](frontPage.png)
 
