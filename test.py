@@ -6,16 +6,15 @@ import utils
 import torch
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
-from datasets import PairedImage
-import os
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QProgressDialog,QProgressBar,QLabel,QDesktopWidget,QMessageBox
-import sys
-
+from datasets import PairedImage_generate
+import numpy as np
+import cv2
+import time
 
 def get_opt():
     parser = argparse.ArgumentParser()
     # Parameters for testing
-    parser.add_argument('--batch_size', type=int, default=16, help='batch size of testing')
+    parser.add_argument('--batch_size', type=int, default=8, help='batch size of testing')
     parser.add_argument('--cuda', action='store_true', help='use GPU computation')
     parser.add_argument('--rootdir', type=str, default='val/', help='root directory of the dataset')
     parser.add_argument('--n_cpu', type=int, default=4, help='number of cpu threads to use during batch generation')
@@ -36,7 +35,7 @@ def get_opt():
     parser.add_argument('--ndf', type=int, default=64, help='number of filters in the discriminator')
     parser.add_argument('--dropout', type=bool, default=False, help='whether to use dropout')
     parser.add_argument('--n_res', type=int, default=9, help='number of resNet blocks')
-    parser.add_argument('--net_segmentation', type=str, default='model/net_segmentation.pth', help='path of the parameters of the generator A')
+    parser.add_argument('--net_segmentation', type=str, default='model_metrics/net_segmentation.pth', help='path of the parameters of the generator A')
 
     opt = parser.parse_args()
     return opt
@@ -74,58 +73,30 @@ def main():
     transform = transforms.Compose([transforms.Resize((opt.sizeh, opt.sizew)),
                                     transforms.ToTensor(),
                                     transforms.Normalize((0.5,), (0.5,))])
-    dataloader = DataLoader(PairedImage(opt.rootdir, transform=transform, mode='val'), batch_size=opt.batch_size,
+    dataloader = DataLoader(PairedImage_generate(opt.rootdir, transform=transform, mode='val'), batch_size=opt.batch_size,
                             shuffle=False, num_workers=opt.n_cpu)
+
     Tensor = torch.cuda.FloatTensor if opt.cuda else torch.Tensor
-
-    # 创建主窗口
-    app = QApplication(sys.argv)
-    window = QWidget()
-    # 设置窗口居中
-    window.setFixedSize(300, 100)
-    window_geometry = window.frameGeometry()
-    center_point = QDesktopWidget().availableGeometry().center()
-    window_geometry.moveCenter(center_point)
-    window.setGeometry(window_geometry)
-    window.setWindowTitle('正在生成mask中')
-    # 设置布局
-    layout = QVBoxLayout(window)
-    # 创建进度条和标签
-    progress_bar = QProgressBar()
-    png_files = len([f for f in os.listdir("val/temp_png") if f.lower().endswith('.png')])
-    progress_bar.setValue(0)
-    progress_bar.setRange(0,png_files)
-    progress_label = QLabel("进度")
-    layout.addWidget(progress_label)
-    layout.addWidget(progress_bar)
-    # 显示主窗口
-    window.show()
-
+    # 记录开始时间
+    start_time = time.time()
     # 测试
     for i, batch in enumerate(dataloader):
         name, image = batch
-        input = Tensor(len(image), opt.input_nc, opt.sizeh, opt.sizew)#自适应batch，防止样本数不是batch整倍数
-        ori = input.copy_(image)
-        mask_pre = net(ori)
-        mask_pre= mask_pre > 0.5
-        #生成分割图片
-        segmentation = ori * mask_pre.float()
+        image = image.to(device)
+        #input = Tensor(len(image), opt.input_nc, opt.sizeh, opt.sizew)  # 自适应batch，防止样本数不是batch整倍数
+        #ori = input.copy_(image)
+        mask_pre = net(image)
+        mask_pre = mask_pre > 0.5
         batch_size = len(name)
         for j in range(batch_size):
             image_name = name[j].split('\\')[-1]
-            path1 = './val/temp_mask/' + image_name
-            path2 = './val/temp_segmentation/' + image_name
-            utils.save_image(mask_pre[j, :, :, :], path1)
-            utils.save_image(segmentation[j, :, :, :], path2)
-        del input
-        segment_file_count = sum(1 for file in os.listdir("val/temp_mask") if file.lower().endswith('.png'))
-        progress_bar.setValue(segment_file_count)
-        QApplication.processEvents()
-        if progress_bar.value() == png_files:
-            app.quit()
-
-
-
+            path = './val/temp_mask/' + image_name
+            utils.save_image(mask_pre[j, :, :, :], path)
+    # 记录结束时间
+    end_time = time.time()
+    # 计算生成时间
+    inference_time = end_time - start_time
+    print(f"生成时间: {inference_time} 秒")
 
 if __name__ == '__main__':
     main()

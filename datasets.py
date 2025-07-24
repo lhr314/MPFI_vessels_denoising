@@ -2,7 +2,6 @@
 # 开发时间：2024/2/2 17:41
 from torch.utils.data import Dataset
 from PIL import Image
-import random
 import glob
 import os
 
@@ -41,6 +40,30 @@ class PairedImage(Dataset):
             self.files_B = sorted(glob.glob(os.path.join(root, 'train', 'mask', '*.*')))
             self.files_A = sorted(glob.glob(os.path.join(root, 'train', 'ori', '*.*')))
         else:
+            self.files_B = sorted(glob.glob(os.path.join("val","Y_mask_test", '*.*')))
+            self.files_A = sorted(glob.glob(os.path.join("val","temp_png", '*.*')))
+
+
+    def __getitem__(self, index):
+        item_A = self.transform(Image.open(self.files_A[index]))
+        if self.mode == 'train':
+            item_B = self.transform(Image.open(self.files_B[index]))
+            return {'ori': item_A, 'mask': item_B}
+        else:
+            item_B = self.transform(Image.open(self.files_B[index]))
+            return {'ori': item_A, 'mask': item_B}
+
+    def __len__(self):
+        return len(self.files_A)
+
+class PairedImage_generate(Dataset):
+    def __init__(self, root, transform = None, mode = 'train'):
+        self.transform = transform
+        self.mode = mode
+        if self.mode == 'train':
+            self.files_B = sorted(glob.glob(os.path.join(root, 'train', 'mask', '*.*')))
+            self.files_A = sorted(glob.glob(os.path.join(root, 'train', 'ori', '*.*')))
+        else:
             self.files_A = sorted(glob.glob(os.path.join("val","temp_png", '*.*')))
 
     def __getitem__(self, index):
@@ -51,5 +74,17 @@ class PairedImage(Dataset):
         else:
             return self.files_A[index], item_A
 
+    def __len__(self):
+        return len(self.files_A)
+
+class PairedImage_metrics(Dataset):
+    def __init__(self, root, transform = None):
+        self.transform = transform
+        self.files_B = sorted(glob.glob(os.path.join("val","temp_mask", '*.*')))
+        self.files_A = sorted(glob.glob(os.path.join("val","Y_mask_test", '*.*')))
+    def __getitem__(self, index):
+        item_A = self.transform(Image.open(self.files_A[index]))
+        item_B = self.transform(Image.open(self.files_B[index]))
+        return {'mask_ori': item_A, 'mask_pre': item_B}
     def __len__(self):
         return len(self.files_A)

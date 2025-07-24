@@ -9,6 +9,7 @@ import torch.nn.functional as F
 import numpy as np
 from PIL import Image
 
+
 #初始化网络权重
 def init_weight(net, init_gain = 0.02):
     def init_func(m):
@@ -29,44 +30,36 @@ def init_weight(net, init_gain = 0.02):
             init.constant_(m.bias.data, 0.0)
     net.apply(init_func)
 
+#ohem策略
+def _ohem_mask(loss, ohem_ratio):
+    with torch.no_grad():
+        values, _ = torch.topk(loss.reshape(-1),
+                               int(loss.nelement() * ohem_ratio))
+        mask = loss >= values[-1]
+    return mask.float()
+
 #定义diceloss损失函数
+import torch
+import torch.nn as nn
+
+
 class DiceLoss(nn.Module):
     def __init__(self, weight=None, size_average=True):
         super(DiceLoss, self).__init__()
 
     def forward(self, inputs, targets, smooth=1):
-
-        #comment out if your model contains a sigmoid or equivalent activation layer
+        # 使用 sigmoid 激活函数
         inputs = torch.sigmoid(inputs)
-
-        #flatten label and prediction tensors
+        # 展平张量
         inputs = inputs.view(-1)
         targets = targets.view(-1)
 
+        # 计算每个像素的 Dice loss
         intersection = (inputs * targets).sum()
-        dice = (2.*intersection + smooth)/(inputs.sum() + targets.sum() + smooth)
+        dice = (2. * intersection + smooth) / (inputs.sum() + targets.sum() + smooth)
+        dice_loss = 1 - dice
 
-        return 1 - dice
-
-class DiceBCELoss(nn.Module):
-    def __init__(self, weight=None, size_average=True):
-        super(DiceBCELoss, self).__init__()
-
-    def forward(self, inputs, targets, smooth=1):
-
-        #comment out if your model contains a sigmoid or equivalent activation layer
-        inputs = torch.sigmoid(inputs)
-
-        #flatten label and prediction tensors
-        inputs = inputs.view(-1)
-        targets = targets.view(-1)
-
-        intersection = (inputs * targets).sum()
-        dice_loss = 1 - (2.*intersection + smooth)/(inputs.sum() + targets.sum() + smooth)
-        BCE = F.binary_cross_entropy(inputs, targets, reduction='mean')
-        Dice_BCE = BCE + dice_loss
-
-        return Dice_BCE
+        return dice_loss
 
 class DiceBCELoss(nn.Module):
     def __init__(self, weight=None, size_average=True):
@@ -120,90 +113,43 @@ def set_requires_grad(nets, requires_grad = False):
             for param in net.parameters():
                 param.requires_grad = requires_grad
 
-# 生成对抗网络（GAN）的损失函数，主要用于训练生成器和判别器的模型
-class GANLoss(nn.Module):
-    def __init__(self, target_real_label = 1.0, target_fake_label = 0.0):
-        super(GANLoss, self).__init__()
-        self.register_buffer('real_label', torch.tensor(target_real_label))
-        self.register_buffer('fake_label', torch.tensor(target_fake_label))
-        self.loss = nn.MSELoss()
-
-    def get_target_tensor(self, prediction, target_is_real):
-        # Return a tensor filled with ground-truth label, and has the same size as the prediction
-        if target_is_real:
-            target_tensor = self.real_label
-        else:
-            target_tensor = self.fake_label
-
-        return target_tensor.expand_as(prediction)
-
-    def __call__(self, prediction, target_is_real):
-        target_tensor = self.get_target_tensor(prediction, target_is_real)
-        return self.loss(prediction, target_tensor)
-
-#图像池类
-class ImagePool():
-    def __init__(self, pool_size=50):
-        self.pool_size = pool_size
-        if self.pool_size > 0:
-            # Create an empty pool
-            self.num_imgs = 0
-            self.images = []
-    def query(self, images):
-        # return an image from the image pool
-        # If the pool size is 0, just return the input images
-        if self.pool_size == 0:
-            return images
-        return_images = []
-        for image in images:
-            image = torch.unsqueeze(image.data, 0)
-            if self.num_imgs < self.pool_size:
-                # If the pool is not full, insert the current image
-                self.num_imgs += 1
-                self.images.append(image)
-                return_images.append(image)
-            else:
-                p = random.uniform(0, 1)
-                if p > 0.5:
-                    # return a random image, and insert current image in the pool
-                    random_id = random.randint(0, self.pool_size - 1)
-                    tmp = self.images[random_id].clone()
-                    self.images[random_id] = image
-                    return_images.append(tmp)
-                else:
-                    # return current image
-                    return_images.append(image)
-        return_images = torch.cat(return_images, 0)
-        return return_images
-
 # 将图像从张量转化回png图像
 def save_image(tensor, name):
     unloader = transforms.ToPILImage()
     image = tensor.cpu().clone()
     image = image * 0.5 + 0.5 # 将张量的值从[-1,1]映射到[0,1]范围
-    image = image.squeeze(0)  # 去除张量中的虚拟批次维度，如果存在的话
+    image = torch.squeeze(image,dim=0)  # 去除张量中的虚拟批次维度，如果存在的话
     image = unloader(image) # 使用 ToPILImage 转换器将张量转换为 PIL 图像
     np_img = np.array(image)
     np_img[tensor[:][0].cpu().numpy() == 0] = 0
-    image=Image.fromarray(np_img)
+    image = Image.fromarray(np_img)
     image.save(name, "PNG")# 保存图像为PNG格式
 
-
 class FocalLoss(nn.Module):
-    def __init__(self, alpha=0.05, gamma=2, reduction='mean'):
+    def __init__(self, alpha=0.1, gamma=3, reduction='mean'):
         super(FocalLoss, self).__init__()
         self.alpha = alpha
         self.gamma = gamma
         self.reduction = reduction
-
     def forward(self, inputs, targets):
         BCE_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction='none')
         pt = torch.exp(-BCE_loss)
         focal_loss = self.alpha * (1-pt)**self.gamma * BCE_loss
-
         if self.reduction == 'mean':
             return torch.mean(focal_loss)
         elif self.reduction == 'sum':
             return torch.sum(focal_loss)
         else:
             return focal_loss
+
+
+
+
+
+
+
+
+
+
+
+

@@ -407,7 +407,7 @@ class Resnet34_Unet_transformer(nn.Module):
         bottleneck = self.transformer_encoder2(bottleneck)
         bottleneck = bottleneck.view(batch_size, num, height, width)  # reshape back to image size
 
-        # Decoder
+        # Decode
         decode_block4 = self.conv_decode4(bottleneck, encode_block4)
         decode_block3 = self.conv_decode3(decode_block4, encode_block3)
         decode_block2 = self.conv_decode2(decode_block3, encode_block2)
