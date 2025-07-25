@@ -1,1 +1,6 @@
-
+'''
+datasets/
+├── train
+│   ├── ori
+│   ├── mask
+'''
