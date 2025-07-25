@@ -35,10 +35,10 @@ conda activate env
 pip install -r requirements.txt
 ```
 ## Data
-[model's checkpoint](https://drive.google.com/drive/folders/13gKZeLUaaSNgNtVCFUIFgmQHc6fqy2Nv?usp=drive_link)
+[Model's checkpoint](https://drive.google.com/drive/folders/13gKZeLUaaSNgNtVCFUIFgmQHc6fqy2Nv?usp=drive_link)
 [Training datasets](https://drive.google.com/drive/folders/1LuE_HMlJGeZ_iseVCi9y0pa_4la0OKW7?usp=drive_link)
-[testing datasets](https://drive.google.com/drive/folders/1RoT3sdV248Ij21J42OrjynhlNgNQ93d9?usp=drive_link)
-[other_MPFI_datasets](https://drive.google.com/drive/folders/1yyjUIjvh1dhQ6ib16kQVSa1mTdXaQ4_G?usp=drive_link)
+[Testing datasets](https://drive.google.com/drive/folders/1RoT3sdV248Ij21J42OrjynhlNgNQ93d9?usp=drive_link)
+[Other_MPFI_datasets](https://drive.google.com/drive/folders/1yyjUIjvh1dhQ6ib16kQVSa1mTdXaQ4_G?usp=drive_link)
 
 ### Training Datasets
 The training set consists of multi-photon brain microvascular images captured by the AIE-gen probe. These images are stored as a tif format file containing 337 pictures. They have been converted into 337 png format images, and data augmentation such as rotation and inversion has been applied. In total, there are 1348 images used for training.
