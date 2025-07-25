@@ -3,7 +3,7 @@
 **MFVISM** is a CNN-based model designed with the intention of accurately identifying the positions of blood vessels in multi-photon cerebral vascular imaging and remove background noise. The skeleton of MFVISM is composed of ResU-net and self-attention layers based on transformer.
 
 ![MFVISM](MFVISM.png)
-![Figure S3](Figure-S3.png)
+![Figure S3](Figure_S3.png)
 
 An overview of the MFVISM pipeline is seen in the image above. Overall Structure consisting of a self-attention layer and residual networks.
 
